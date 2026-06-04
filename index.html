@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blackjack Checker</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+
+<div id="menu">
+
+    <h1>Blackjack Checker</h1>
+
+    <button onclick="startScan('ace')">
+        Dealer Shows Ace
+    </button>
+
+    <button onclick="startScan('ten')">
+        Dealer Shows Ten
+    </button>
+
+</div>
+
+<div id="scanner" class="hidden">
+
+    <h2>Scanning...</h2>
+
+    <p>
+        Hold the upper-left corner of the hole card
+        in front of the front camera.
+    </p>
+
+    <p id="status">
+        Initializing...
+    </p>
+
+</div>
+
+<div id="result" class="hidden">
+
+    <h1 id="resultText"></h1>
+
+    <button onclick="resetApp()">
+        New Hand
+    </button>
+
+</div>
+
+<video id="video" autoplay playsinline class="hidden"></video>
+
+<canvas id="canvas" class="hidden"></canvas>
+
+<script src="script.js"></script>
+
+</body>
+</html>
