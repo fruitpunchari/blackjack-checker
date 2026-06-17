@@ -36,7 +36,7 @@ async function startScan(mode) {
         });
 
         video.srcObject = stream;
-
+        video.play();
         statusText.innerText = "Scanning...";
 
         timeoutHandle = setTimeout(() => {
