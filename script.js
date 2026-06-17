@@ -88,6 +88,9 @@ async function scanFrame() {
             .toUpperCase()
             .trim();
 
+        console.log("OCR:", raw);
+        statusText.innerText = "OCR: " + raw;
+
         processReading(raw);
 
     } catch (err) {
