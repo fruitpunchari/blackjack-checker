@@ -19,3 +19,11 @@ button {
 #resultText {
     font-size: 48px;
 }
+
+#video {
+    width: 90vw;
+    max-width: 500px;
+    border: 2px solid black;
+    margin: 20px auto;
+    display: block;
+}
