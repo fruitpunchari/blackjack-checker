@@ -1,188 +1,374 @@
+// ======================================================
+// Blackjack Hole Card Checker
+// Version 2.0
+// TensorFlow.js + Teachable Machine
+// ======================================================
+
+// ----------------------------
+// Model
+// ----------------------------
+
+const MODEL_URL = "./my_model/";
+
+let model = null;
+
+// ----------------------------
+// Camera
+// ----------------------------
+
 const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
-const statusText = document.getElementById("status");
 
 let stream = null;
 
+// ----------------------------
+// UI
+// ----------------------------
+
+const statusText = document.getElementById("status");
+
+const scannerTitle =
+    document.getElementById("scannerTitle");
+
+// ----------------------------
+// Settings
+// ----------------------------
+
+const CONFIDENCE_THRESHOLD = 0.95;
+
+const REQUIRED_STREAK = 5;
+
+const SCAN_INTERVAL = 200;
+
+const COUNTDOWN_SECONDS = 3;
+
+const SCAN_TIMEOUT = 10000;
+
+// ----------------------------
+// Runtime variables
+// ----------------------------
+
 let dealerMode = null;
 
-let scanInterval = null;
+let scanTimer = null;
 
-let timeoutHandle = null;
+let timeoutTimer = null;
 
-let votes = {
-    blackjack: 0,
-    noBlackjack: 0
-};
+let previousPrediction = "";
 
-const REQUIRED_VOTES = 5;
+let currentStreak = 0;
+
+let scanningEnabled = false;
+
+// ======================================================
+// Load AI Model
+// ======================================================
+
+async function loadModel() {
+
+    if (model !== null)
+        return;
+
+    statusText.innerText =
+        "Loading AI model...";
+
+    model = await tmImage.load(
+
+        MODEL_URL + "model.json",
+
+        MODEL_URL + "metadata.json"
+
+    );
+
+}
+
+// ======================================================
+// Start Scan
+// ======================================================
 
 async function startScan(mode) {
 
     dealerMode = mode;
 
-    votes.blackjack = 0;
-    votes.noBlackjack = 0;
+    previousPrediction = "";
 
-    document.getElementById("menu").classList.add("hidden");
-    document.getElementById("scanner").classList.remove("hidden");
+    currentStreak = 0;
+
+    scanningEnabled = false;
+
+    document
+        .getElementById("menu")
+        .classList
+        .add("hidden");
+
+    document
+        .getElementById("scanner")
+        .classList
+        .remove("hidden");
+
+    scannerTitle.innerText =
+        "Preparing Camera...";
+
+    statusText.innerText =
+        "Loading AI...";
 
     try {
 
-        stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: "user"
-            }
-        });
+        await loadModel();
+
+        stream =
+            await navigator.mediaDevices.getUserMedia({
+
+                video: {
+
+                    facingMode: "user"
+
+                }
+
+            });
 
         video.srcObject = stream;
-        
-        video.play();
-        
-        statusText.innerText = "Scanning...";
 
-        timeoutHandle = setTimeout(() => {
+        await video.play();
 
-            finishError(
-                "Unable to identify card."
-            );
-
-        }, 10000);
-
-        scanInterval = setInterval(scanFrame, 700);
-
-    } catch (err) {
-
-        finishError(
-            "Camera permission denied."
-        );
+        await beginCountdown();
 
     }
-}
 
-async function scanFrame() {
-
-    if (video.videoWidth === 0) {
-        return;
-    }
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    const ctx = canvas.getContext("2d");
-
-    ctx.drawImage(
-        video,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-    );
-
-    try {
-
-        const result = await Tesseract.recognize(
-            canvas,
-            "eng"
-        );
-
-        const raw = result.data.text
-            .toUpperCase()
-            .trim();
-
-        console.log("OCR:", raw);
-        statusText.innerText = "OCR: " + raw;
-
-        processReading(raw);
-
-    } catch (err) {
+    catch (err) {
 
         console.log(err);
 
+        finishError(
+            "Unable to access camera."
+        );
+
     }
+
 }
 
-function processReading(text) {
+// ======================================================
+// Countdown
+// ======================================================
 
-    const rank = extractRank(text);
+async function beginCountdown() {
 
-    if (!rank) {
-        return;
+    scannerTitle.innerText =
+        "Position Card";
+
+    for (
+
+        let i = COUNTDOWN_SECONDS;
+
+        i >= 1;
+
+        i--
+
+    ) {
+
+        statusText.innerText =
+
+            "Scanning begins in\n\n" + i;
+
+        await sleep(1000);
+
     }
+
+    scannerTitle.innerText =
+        "Scanning";
+
+    scanningEnabled = true;
+
+    timeoutTimer =
+
+        setTimeout(
+
+            timeoutReached,
+
+            SCAN_TIMEOUT
+
+        );
+
+    scanTimer =
+
+        setInterval(
+
+            scanFrame,
+
+            SCAN_INTERVAL
+
+        );
+
+}
+
+// ======================================================
+// Main Scan Loop
+// ======================================================
+
+async function scanFrame() {
+
+    if (!scanningEnabled)
+        return;
+
+    if (video.videoWidth === 0)
+        return;
+
+    const predictions =
+
+        await model.predict(video);
+
+    let best = predictions[0];
+
+    for (
+
+        let i = 1;
+
+        i < predictions.length;
+
+        i++
+
+    ) {
+
+        if (
+
+            predictions[i].probability >
+
+            best.probability
+
+        ) {
+
+            best = predictions[i];
+
+        }
+
+    }
+
+    if (
+
+        best.probability <
+
+        CONFIDENCE_THRESHOLD
+
+    ) {
+
+        statusText.innerText =
+
+            "Waiting for a confident prediction...";
+
+        return;
+
+    }
+
+    updatePrediction(best);
+
+}
+
+// ======================================================
+// Prediction Stability
+// ======================================================
+
+function updatePrediction(prediction) {
+
+    const name = prediction.className;
+
+    const confidence =
+
+        prediction.probability;
+
+    if (
+
+        name === previousPrediction
+
+    ) {
+
+        currentStreak++;
+
+    }
+
+    else {
+
+        previousPrediction = name;
+
+        currentStreak = 1;
+
+    }
+
+    statusText.innerText =
+
+        "Prediction\n\n" +
+
+        name +
+
+        "\n\nConfidence\n\n" +
+
+        (confidence * 100).toFixed(1) +
+
+        "%\n\nStable\n\n" +
+
+        currentStreak +
+
+        " / " +
+
+        REQUIRED_STREAK;
+
+    if (
+
+        currentStreak >=
+
+        REQUIRED_STREAK
+
+    ) {
+
+        decideResult(name);
+
+    }
+
+}
+
+// ======================================================
+// Decide Blackjack
+// ======================================================
+
+function decideResult(className) {
 
     let blackjack = false;
 
     if (dealerMode === "ten") {
 
-        blackjack = (rank === "A");
+        blackjack = (className === "ACE");
 
     } else {
 
-        blackjack =
-            rank === "10" ||
-            rank === "J" ||
-            rank === "Q" ||
-            rank === "K";
+        blackjack = (className === "TEN_VALUE");
+
     }
 
     if (blackjack) {
 
-        votes.blackjack++;
-
-    } else {
-
-        votes.noBlackjack++;
-
-    }
-
-    statusText.innerText =
-        `BJ Votes: ${votes.blackjack}
-No BJ Votes: ${votes.noBlackjack}`;
-
-    if (
-        votes.blackjack >= REQUIRED_VOTES
-    ) {
-
         finishResult("BLACKJACK");
 
-    }
-
-    if (
-        votes.noBlackjack >= REQUIRED_VOTES
-    ) {
+    } else {
 
         finishResult("NO BLACKJACK");
 
     }
+
 }
 
-function extractRank(text) {
+// ======================================================
+// Timeout
+// ======================================================
 
-    const validRanks = [
-        "10",
-        "A",
-        "K",
-        "Q",
-        "J",
-        "9",
-        "8",
-        "7",
-        "6",
-        "5",
-        "4",
-        "3",
-        "2"
-    ];
+function timeoutReached() {
 
-    for (const rank of validRanks) {
+    finishError(
+        "Unable to identify card.\n\nPlease try again."
+    );
 
-        if (text.includes(rank)) {
-            return rank;
-        }
-    }
-
-    return null;
 }
+
+// ======================================================
+// Finish Result
+// ======================================================
 
 function finishResult(message) {
 
@@ -201,7 +387,12 @@ function finishResult(message) {
     document
         .getElementById("resultText")
         .innerText = message;
+
 }
+
+// ======================================================
+// Finish Error
+// ======================================================
 
 function finishError(message) {
 
@@ -220,13 +411,24 @@ function finishError(message) {
     document
         .getElementById("resultText")
         .innerText = message;
+
 }
+
+// ======================================================
+// Stop Everything
+// ======================================================
 
 function stopScanning() {
 
-    clearInterval(scanInterval);
+    scanningEnabled = false;
 
-    clearTimeout(timeoutHandle);
+    clearInterval(scanTimer);
+
+    clearTimeout(timeoutTimer);
+
+    scanTimer = null;
+
+    timeoutTimer = null;
 
     if (stream) {
 
@@ -235,12 +437,24 @@ function stopScanning() {
             .forEach(track => track.stop());
 
         stream = null;
+
     }
+
 }
+
+// ======================================================
+// Reset
+// ======================================================
 
 function resetApp() {
 
     stopScanning();
+
+    previousPrediction = "";
+
+    currentStreak = 0;
+
+    dealerMode = null;
 
     document
         .getElementById("result")
@@ -256,4 +470,19 @@ function resetApp() {
         .getElementById("menu")
         .classList
         .remove("hidden");
+
+}
+
+// ======================================================
+// Utility
+// ======================================================
+
+function sleep(ms) {
+
+    return new Promise(resolve =>
+
+        setTimeout(resolve, ms)
+
+    );
+
 }
