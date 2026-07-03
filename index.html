@@ -1,61 +1,113 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <title>Blackjack Checker</title>
+<html lang="en">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>Blackjack Hole Card Checker</title>
 
     <link rel="stylesheet" href="style.css">
 
+    <!-- TensorFlow -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+
+    <!-- Teachable Machine -->
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
 </head>
+
 <body>
 
-<div id="menu">
+    <!-- ===================== -->
+    <!-- MAIN MENU             -->
+    <!-- ===================== -->
 
-    <h1>Blackjack Checker</h1>
+    <div id="menu">
 
-    <button onclick="startScan('ace')">
-        Dealer Shows Ace
-    </button>
+        <h1>Blackjack Hole Card Checker</h1>
 
-    <button onclick="startScan('ten')">
-        Dealer Shows Ten
-    </button>
+        <p>
 
-</div>
+            Select the dealer upcard.
 
-<div id="scanner" class="hidden">
+        </p>
 
-    <h2>Scanning...</h2>
+        <button onclick="startScan('ace')">
 
-    <p>
-        Hold the upper-left corner of the hole card
-        in front of the front camera.
-    </p>
+            Dealer Shows Ace
 
-    <p id="status">
-        Initializing...
-    </p>
+        </button>
 
-</div>
+        <button onclick="startScan('ten')">
 
-<div id="result" class="hidden">
+            Dealer Shows Ten
 
-    <h1 id="resultText"></h1>
+        </button>
 
-    <button onclick="resetApp()">
-        New Hand
-    </button>
+    </div>
 
-</div>
 
-<video id="video" autoplay playsinline></video>
+    <!-- ===================== -->
+    <!-- SCANNER PAGE          -->
+    <!-- ===================== -->
 
-<canvas id="canvas" class="hidden"></canvas>
+    <div
+        id="scanner"
+        class="hidden">
 
-<script src="script.js"></script>
+        <h2 id="scannerTitle">
+
+            Preparing Camera...
+
+        </h2>
+
+        <p id="status">
+
+            Initializing...
+
+        </p>
+
+    </div>
+
+
+    <!-- ===================== -->
+    <!-- RESULT PAGE           -->
+    <!-- ===================== -->
+
+    <div
+        id="result"
+        class="hidden">
+
+        <h1 id="resultText">
+
+        </h1>
+
+        <button onclick="resetApp()">
+
+            New Hand
+
+        </button>
+
+    </div>
+
+
+    <!-- Hidden camera -->
+
+    <video
+        id="video"
+        autoplay
+        playsinline
+        muted
+        class="hidden">
+    </video>
+
+    <script src="script.js"></script>
 
 </body>
+
 </html>
