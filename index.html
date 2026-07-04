@@ -3,110 +3,73 @@
 
 <head>
 
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
 
-    <title>Blackjack Hole Card Checker</title>
+<title>Blackjack Checker</title>
 
-    <link rel="stylesheet" href="style.css">
+<link rel="stylesheet"
+      href="style.css">
 
-    <!-- TensorFlow -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
 
-    <!-- Teachable Machine -->
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
 </head>
 
 <body>
 
-    <!-- ===================== -->
-    <!-- MAIN MENU             -->
-    <!-- ===================== -->
+<div id="menu" class="screen">
 
-    <div id="menu">
+    <h1>Blackjack Checker</h1>
 
-        <h1>Blackjack Hole Card Checker</h1>
+    <button onclick="startScan('ace')">
+        Dealer Shows Ace
+    </button>
 
-        <p>
+    <button onclick="startScan('ten')">
+        Dealer Shows Ten
+    </button>
 
-            Select the dealer upcard.
-
-        </p>
-
-        <button onclick="startScan('ace')">
-
-            Dealer Shows Ace
-
-        </button>
-
-        <button onclick="startScan('ten')">
-
-            Dealer Shows Ten
-
-        </button>
-
-    </div>
+</div>
 
 
-    <!-- ===================== -->
-    <!-- SCANNER PAGE          -->
-    <!-- ===================== -->
+<div id="scanner" class="screen hidden">
 
-    <div
-        id="scanner"
-        class="hidden">
+    <h1 id="scannerTitle">
+        Preparing...
+    </h1>
 
-        <h2 id="scannerTitle">
+    <p id="status">
+        Loading AI...
+    </p>
 
-            Preparing Camera...
-
-        </h2>
-
-        <p id="status">
-
-            Initializing...
-
-        </p>
-
-    </div>
+</div>
 
 
-    <!-- ===================== -->
-    <!-- RESULT PAGE           -->
-    <!-- ===================== -->
+<div id="result" class="screen hidden">
 
-    <div
-        id="result"
-        class="hidden">
+    <h1 id="resultText"></h1>
 
-        <h1 id="resultText">
+    <button onclick="resetApp()">
+        New Hand
+    </button>
 
-        </h1>
-
-        <button onclick="resetApp()">
-
-            New Hand
-
-        </button>
-
-    </div>
+</div>
 
 
-    <!-- Hidden camera -->
+<!-- Hidden camera -->
+<video
+    id="video"
+    autoplay
+    playsinline
+    muted
+    class="hidden">
+</video>
 
-    <video
-        id="video"
-        autoplay
-        playsinline
-        muted
-        class="hidden">
-    </video>
-
-    <script src="script.js"></script>
+<script src="script.js"></script>
 
 </body>
 
