@@ -207,7 +207,7 @@ function beginPredictionLoop() {
 
     timeoutTimer = setTimeout(() => {
 
-        showError("Scan timed out.");
+        showTimeout();
 
     }, SCAN_TIMEOUT);
 
@@ -417,4 +417,110 @@ function resetStreak() {
 function showTimeout() {
 
     showError("Unable to detect card.");
+}
+
+// =======================================================
+// FINAL POLISH LAYER
+// =======================================================
+
+// -------------------------------
+// Result Handler
+// -------------------------------
+
+function finishResult(isBlackjack) {
+
+    setState(STATE.RESULT);
+
+    stopEverything();
+
+    document.getElementById("scanner").classList.add("hidden");
+    document.getElementById("result").classList.remove("hidden");
+
+    resultText.innerText =
+        isBlackjack ? "BLACKJACK" : "NO BLACKJACK";
+
+}
+
+// -------------------------------
+// Timeout
+// -------------------------------
+
+function showTimeout() {
+
+    showError("Unable to detect card.");
+
+}
+
+// -------------------------------
+// Error handler
+// -------------------------------
+
+function showError(msg) {
+
+    setState(STATE.ERROR);
+
+    stopEverything();
+
+    document.getElementById("scanner").classList.add("hidden");
+    document.getElementById("result").classList.remove("hidden");
+
+    resultText.innerText = msg;
+
+}
+
+// -------------------------------
+// Stop everything cleanly
+// -------------------------------
+
+function stopEverything() {
+
+    resetRuntime();
+
+    if (stream) {
+
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+
+    }
+
+}
+
+// -------------------------------
+// Reset app
+// -------------------------------
+
+function resetApp() {
+
+    stopEverything();
+
+    dealerMode = null;
+
+    currentState = STATE.IDLE;
+
+    document.getElementById("result").classList.add("hidden");
+    document.getElementById("scanner").classList.add("hidden");
+    document.getElementById("menu").classList.remove("hidden");
+
+}
+
+// -------------------------------
+// Optional: Debug mode (OFF by default)
+// -------------------------------
+
+const DEBUG = false;
+
+// If you ever want debugging:
+function debugLog(pred, conf, streak) {
+
+    if (!DEBUG) return;
+
+    console.log(
+        "Prediction:",
+        pred,
+        "Confidence:",
+        conf,
+        "Streak:",
+        streak
+    );
+
 }
