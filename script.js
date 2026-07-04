@@ -266,3 +266,155 @@ function stopEverything() {
 
     }
 }
+
+
+// =======================================================
+// Blackjack Checker — AI Prediction Engine
+// Version 3.0
+// =======================================================
+
+// -------------------------------
+// Prediction Loop
+// -------------------------------
+
+async function scanFrame() {
+
+    if (currentState !== STATE.SCANNING) return;
+
+    if (!model || !video.videoWidth) return;
+
+    try {
+
+        const predictions = await model.predict(video);
+
+        const best = getBestPrediction(predictions);
+
+        if (best.probability < CONFIDENCE_THRESHOLD) {
+
+            statusText.innerText = "Looking for card...";
+
+            resetStreak();
+
+            return;
+
+        }
+
+        processPrediction(best);
+
+    } catch (err) {
+
+        console.error(err);
+
+    }
+}
+
+// -------------------------------
+// Get highest confidence class
+// -------------------------------
+
+function getBestPrediction(predictions) {
+
+    let best = predictions[0];
+
+    for (let i = 1; i < predictions.length; i++) {
+
+        if (predictions[i].probability > best.probability) {
+            best = predictions[i];
+        }
+
+    }
+
+    return best;
+}
+
+// -------------------------------
+// Stability Engine
+// -------------------------------
+
+function processPrediction(pred) {
+
+    const className = pred.className;
+    const confidence = pred.probability;
+
+    if (className === lastClass) {
+
+        streak++;
+
+    } else {
+
+        lastClass = className;
+        streak = 1;
+    }
+
+    statusText.innerText =
+        `Detecting...\n\n${className}\n${(confidence * 100).toFixed(1)}%\nStability ${streak}/${STABLE_REQUIRED}`;
+
+    if (streak >= STABLE_REQUIRED) {
+
+        evaluateResult(className);
+
+    }
+}
+
+// -------------------------------
+// Convert AI output → Blackjack logic
+// -------------------------------
+
+function evaluateResult(className) {
+
+    let isBlackjack = false;
+
+    // Dealer shows TEN → hole card ACE = blackjack
+    if (dealerMode === "ten") {
+
+        isBlackjack = (className === "ACE");
+
+    }
+
+    // Dealer shows ACE → hole card TEN/J/Q/K = blackjack
+    else if (dealerMode === "ace") {
+
+        isBlackjack =
+            className === "TEN_VALUE";
+    }
+
+    finishResult(isBlackjack);
+
+}
+
+// -------------------------------
+// Final decision
+// -------------------------------
+
+function finishResult(isBlackjack) {
+
+    setState(STATE.RESULT);
+
+    stopEverything();
+
+    document.getElementById("scanner").classList.add("hidden");
+    document.getElementById("result").classList.remove("hidden");
+
+    resultText.innerText =
+        isBlackjack ? "BLACKJACK" : "NO BLACKJACK";
+}
+
+// -------------------------------
+// Reset streak helper
+// -------------------------------
+
+function resetStreak() {
+
+    lastClass = "";
+    streak = 0;
+
+}
+
+// -------------------------------
+// Timeout handler (hooked from Part 1)
+// -------------------------------
+
+function showTimeout() {
+
+    showError("Unable to detect card.");
+}
