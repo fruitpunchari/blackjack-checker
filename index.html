@@ -3,73 +3,149 @@
 
 <head>
 
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
-<title>Blackjack Checker</title>
+    <title>Blackjack Checker</title>
 
-<link rel="stylesheet"
-      href="style.css">
-
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <link
+        rel="stylesheet"
+        href="style.css">
 
 </head>
 
 <body>
 
-<div id="menu" class="screen">
+    <div class="container">
 
-    <h1>Blackjack Checker</h1>
+        <!-- ========================================= -->
+        <!-- Server Setup -->
+        <!-- ========================================= -->
 
-    <button onclick="startScan('ace')">
-        Dealer Shows Ace
-    </button>
+        <div id="setupScreen" class="screen hidden">
 
-    <button onclick="startScan('ten')">
-        Dealer Shows Ten
-    </button>
+            <h1>Blackjack Checker</h1>
 
-</div>
+            <p class="subtitle">
 
+                Enter the address of your AI server.
 
-<div id="scanner" class="screen hidden">
+            </p>
 
-    <h1 id="scannerTitle">
-        Preparing...
-    </h1>
+            <input
 
-    <p id="status">
-        Loading AI...
-    </p>
+                id="serverInput"
 
-</div>
+                type="text"
 
+                placeholder="http://192.168.1.50:8000"
 
-<div id="result" class="screen hidden">
+                autocomplete="off"
 
-    <h1 id="resultText"></h1>
+            >
 
-    <button onclick="resetApp()">
-        New Hand
-    </button>
+            <button onclick="saveServer()">
 
-</div>
+                Save
 
+            </button>
 
-<!-- Hidden camera -->
-<video
-    id="video"
-    autoplay
-    playsinline
-    muted
-    class="hidden">
-</video>
+        </div>
 
-<script src="script.js"></script>
+        <!-- ========================================= -->
+        <!-- Main Menu -->
+        <!-- ========================================= -->
+
+        <div id="menuScreen" class="screen hidden">
+
+            <h1>Blackjack Checker</h1>
+
+            <p class="subtitle">
+
+                What card is the dealer showing?
+
+            </p>
+
+            <button onclick="startScan('ace')">
+
+                Dealer Shows Ace
+
+            </button>
+
+            <button onclick="startScan('ten')">
+
+                Dealer Shows Ten / Face
+
+            </button>
+
+            <button
+                class="secondary"
+                onclick="changeServer()">
+
+                Change AI Server
+
+            </button>
+
+        </div>
+
+        <!-- ========================================= -->
+        <!-- Scanner -->
+        <!-- ========================================= -->
+
+        <div id="scannerScreen" class="screen hidden">
+
+            <h2 id="scannerTitle">
+
+                Preparing Camera...
+
+            </h2>
+
+            <video
+
+                id="video"
+
+                autoplay
+
+                playsinline
+
+                muted
+
+            ></video>
+
+            <p id="status">
+
+                Initializing...
+
+            </p>
+
+        </div>
+
+        <!-- ========================================= -->
+        <!-- Result -->
+        <!-- ========================================= -->
+
+        <div id="resultScreen" class="screen hidden">
+
+            <h1 id="resultText">
+
+                Result
+
+            </h1>
+
+            <button onclick="newHand()">
+
+                New Hand
+
+            </button>
+
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
 
 </body>
 
