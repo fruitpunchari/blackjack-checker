@@ -1,526 +1,160 @@
+// ===========================================================
+// Blackjack Checker
+// Client
+// ===========================================================
 
-// =======================================================
-// Blackjack Checker — Core Engine
-// Version 3.0
-// =======================================================
+// -----------------------------------------------------------
+// Constants
+// -----------------------------------------------------------
 
-// -------------------------------
-// Model
-// -------------------------------
-
-const MODEL_URL = "./my_model/";
-
-let model = null;
-
-// -------------------------------
-// Camera
-// -------------------------------
-
-const video = document.getElementById("video");
-
-let stream = null;
-
-// -------------------------------
-// UI
-// -------------------------------
-
-const statusText = document.getElementById("status");
-const scannerTitle = document.getElementById("scannerTitle");
-const resultText = document.getElementById("resultText");
-
-// -------------------------------
-// App Configuration
-// -------------------------------
+const STORAGE_KEY = "blackjack_server";
 
 const COUNTDOWN_SECONDS = 3;
 
-const SCAN_INTERVAL = 200;
+const IMAGE_WIDTH = 800;
 
-const SCAN_TIMEOUT = 10000;
+const JPEG_QUALITY = 0.85;
 
-const AUTOFOCUS_DELAY = 500;
+// -----------------------------------------------------------
+// Runtime Variables
+// -----------------------------------------------------------
 
-const STABLE_REQUIRED = 3;
+let serverURL = "";
 
-const CONFIDENCE_THRESHOLD = 0.92;
+let dealerMode = "";
 
-// -------------------------------
-// State Machine
-// -------------------------------
+let stream = null;
 
-const STATE = {
-    IDLE: "IDLE",
-    LOADING: "LOADING",
-    COUNTDOWN: "COUNTDOWN",
-    WAITING: "WAITING",
-    SCANNING: "SCANNING",
-    RESULT: "RESULT",
-    ERROR: "ERROR"
+// -----------------------------------------------------------
+// DOM
+// -----------------------------------------------------------
+
+const setupScreen = document.getElementById("setupScreen");
+
+const menuScreen = document.getElementById("menuScreen");
+
+const scannerScreen = document.getElementById("scannerScreen");
+
+const resultScreen = document.getElementById("resultScreen");
+
+const serverInput = document.getElementById("serverInput");
+
+const video = document.getElementById("video");
+
+const statusText = document.getElementById("status");
+
+const scannerTitle = document.getElementById("scannerTitle");
+
+const resultText = document.getElementById("resultText");
+
+// ===========================================================
+// Startup
+// ===========================================================
+
+window.onload = function () {
+
+    serverURL = localStorage.getItem(STORAGE_KEY);
+
+    if (serverURL) {
+
+        showMenu();
+
+    }
+
+    else {
+
+        showSetup();
+
+    }
+
 };
 
-let currentState = STATE.IDLE;
+// ===========================================================
+// Screen Helpers
+// ===========================================================
 
-// -------------------------------
-// Runtime Variables
-// -------------------------------
+function hideAllScreens() {
 
-let dealerMode = null;
+    setupScreen.classList.add("hidden");
 
-let scanInterval = null;
+    menuScreen.classList.add("hidden");
 
-let timeoutTimer = null;
+    scannerScreen.classList.add("hidden");
 
-let countdownTimer = null;
+    resultScreen.classList.add("hidden");
 
-let autofocusTimer = null;
+}
 
-// Prediction tracking
+function showSetup() {
 
-let lastClass = "";
+    hideAllScreens();
 
-let streak = 0;
+    setupScreen.classList.remove("hidden");
 
-// -------------------------------
-// Model Loading
-// -------------------------------
+}
 
-async function loadModel() {
+function showMenu() {
 
-    if (model) return;
+    hideAllScreens();
 
-    setState(STATE.LOADING);
+    menuScreen.classList.remove("hidden");
 
-    statusText.innerText = "Loading AI model...";
+}
 
-    model = await tmImage.load(
-        MODEL_URL + "model.json",
-        MODEL_URL + "metadata.json"
+function showScanner() {
+
+    hideAllScreens();
+
+    scannerScreen.classList.remove("hidden");
+
+}
+
+function showResult(message) {
+
+    hideAllScreens();
+
+    resultScreen.classList.remove("hidden");
+
+    resultText.innerText = message;
+
+}
+
+// ===========================================================
+// Server Settings
+// ===========================================================
+
+function saveServer() {
+
+    const value = serverInput.value.trim();
+
+    if (value.length === 0) {
+
+        alert("Please enter a server address.");
+
+        return;
+
+    }
+
+    serverURL = value;
+
+    localStorage.setItem(
+
+        STORAGE_KEY,
+
+        serverURL
+
     );
 
-}
-
-// -------------------------------
-// Start Scan
-// -------------------------------
-
-async function startScan(mode) {
-
-    dealerMode = mode;
-
-    resetRuntime();
-
-    setState(STATE.LOADING);
-
-    document.getElementById("menu").classList.add("hidden");
-    document.getElementById("scanner").classList.remove("hidden");
-
-    scannerTitle.innerText = "Preparing Camera...";
-    statusText.innerText = "Loading...";
-
-    try {
-
-        await loadModel();
-
-        await startCamera();
-
-        startCountdown();
-
-    } catch (err) {
-
-        console.error(err);
-        showError("Camera or model failed to load.");
-
-    }
-}
-
-// -------------------------------
-// Camera Setup
-// -------------------------------
-
-async function startCamera() {
-
-    stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user" }
-    });
-
-    video.srcObject = stream;
-
-    await video.play();
+    showMenu();
 
 }
 
-// -------------------------------
-// Countdown
-// -------------------------------
+function changeServer() {
 
-function startCountdown() {
+    localStorage.removeItem(STORAGE_KEY);
 
-    setState(STATE.COUNTDOWN);
+    serverInput.value = "";
 
-    let t = COUNTDOWN_SECONDS;
-
-    countdownTimer = setInterval(() => {
-
-        statusText.innerText = `Starting in ${t}`;
-
-        t--;
-
-        if (t < 0) {
-
-            clearInterval(countdownTimer);
-
-            startScanning();
-
-        }
-
-    }, 1000);
-
-}
-
-// -------------------------------
-// Begin Scanning Phase
-// -------------------------------
-
-function startScanning() {
-
-    setState(STATE.WAITING);
-
-    statusText.innerText = "Hold card steady...";
-
-    autofocusTimer = setTimeout(() => {
-
-        beginPredictionLoop();
-
-    }, AUTOFOCUS_DELAY);
-
-}
-
-// -------------------------------
-// Prediction loop starts in Part 2
-// -------------------------------
-
-function beginPredictionLoop() {
-
-    setState(STATE.SCANNING);
-
-    statusText.innerText = "Scanning...";
-
-    timeoutTimer = setTimeout(() => {
-
-        showTimeout();
-
-    }, SCAN_TIMEOUT);
-
-    scanInterval = setInterval(scanFrame, SCAN_INTERVAL);
-
-}
-
-// -------------------------------
-// Utility
-// -------------------------------
-
-function setState(newState) {
-    currentState = newState;
-}
-
-function resetRuntime() {
-
-    clearInterval(scanInterval);
-    clearInterval(countdownTimer);
-    clearTimeout(timeoutTimer);
-    clearTimeout(autofocusTimer);
-
-    scanInterval = null;
-    countdownTimer = null;
-    timeoutTimer = null;
-    autofocusTimer = null;
-
-    lastClass = "";
-    streak = 0;
-}
-
-function showError(msg) {
-
-    setState(STATE.ERROR);
-
-    stopEverything();
-
-    resultText.innerText = msg;
-
-    document.getElementById("scanner").classList.add("hidden");
-    document.getElementById("result").classList.remove("hidden");
-}
-
-// -------------------------------
-// Stop camera
-// -------------------------------
-
-function stopEverything() {
-
-    resetRuntime();
-
-    if (stream) {
-
-        stream.getTracks().forEach(t => t.stop());
-        stream = null;
-
-    }
-}
-
-
-// =======================================================
-// Blackjack Checker — AI Prediction Engine
-// Version 3.0
-// =======================================================
-
-// -------------------------------
-// Prediction Loop
-// -------------------------------
-
-async function scanFrame() {
-
-    if (currentState !== STATE.SCANNING) return;
-
-    if (!model || !video.videoWidth) return;
-
-    try {
-
-        const predictions = await model.predict(video);
-
-        const best = getBestPrediction(predictions);
-
-        if (best.probability < CONFIDENCE_THRESHOLD) {
-
-            statusText.innerText = "Looking for card...";
-
-            resetStreak();
-
-            return;
-
-        }
-
-        processPrediction(best);
-
-    } catch (err) {
-
-        console.error(err);
-
-    }
-}
-
-// -------------------------------
-// Get highest confidence class
-// -------------------------------
-
-function getBestPrediction(predictions) {
-
-    let best = predictions[0];
-
-    for (let i = 1; i < predictions.length; i++) {
-
-        if (predictions[i].probability > best.probability) {
-            best = predictions[i];
-        }
-
-    }
-
-    return best;
-}
-
-// -------------------------------
-// Stability Engine
-// -------------------------------
-
-function processPrediction(pred) {
-
-    const className = pred.className;
-    const confidence = pred.probability;
-
-    if (className === lastClass) {
-
-        streak++;
-
-    } else {
-
-        lastClass = className;
-        streak = 1;
-    }
-
-    statusText.innerText =
-        `Detecting...\n\n${className}\n${(confidence * 100).toFixed(1)}%\nStability ${streak}/${STABLE_REQUIRED}`;
-
-    if (streak >= STABLE_REQUIRED) {
-
-        evaluateResult(className);
-
-    }
-}
-
-// -------------------------------
-// Convert AI output → Blackjack logic
-// -------------------------------
-
-function evaluateResult(className) {
-
-    let isBlackjack = false;
-
-    // Dealer shows TEN → hole card ACE = blackjack
-    if (dealerMode === "ten") {
-
-        isBlackjack = (className === "ACE");
-
-    }
-
-    // Dealer shows ACE → hole card TEN/J/Q/K = blackjack
-    else if (dealerMode === "ace") {
-
-        isBlackjack =
-            className === "TEN_VALUE";
-    }
-
-    finishResult(isBlackjack);
-
-}
-
-// -------------------------------
-// Final decision
-// -------------------------------
-
-function finishResult(isBlackjack) {
-
-    setState(STATE.RESULT);
-
-    stopEverything();
-
-    document.getElementById("scanner").classList.add("hidden");
-    document.getElementById("result").classList.remove("hidden");
-
-    resultText.innerText =
-        isBlackjack ? "BLACKJACK" : "NO BLACKJACK";
-}
-
-// -------------------------------
-// Reset streak helper
-// -------------------------------
-
-function resetStreak() {
-
-    lastClass = "";
-    streak = 0;
-
-}
-
-// -------------------------------
-// Timeout handler (hooked from Part 1)
-// -------------------------------
-
-function showTimeout() {
-
-    showError("Unable to detect card.");
-}
-
-// =======================================================
-// FINAL POLISH LAYER
-// =======================================================
-
-// -------------------------------
-// Result Handler
-// -------------------------------
-
-function finishResult(isBlackjack) {
-
-    setState(STATE.RESULT);
-
-    stopEverything();
-
-    document.getElementById("scanner").classList.add("hidden");
-    document.getElementById("result").classList.remove("hidden");
-
-    resultText.innerText =
-        isBlackjack ? "BLACKJACK" : "NO BLACKJACK";
-
-}
-
-// -------------------------------
-// Timeout
-// -------------------------------
-
-function showTimeout() {
-
-    showError("Unable to detect card.");
-
-}
-
-// -------------------------------
-// Error handler
-// -------------------------------
-
-function showError(msg) {
-
-    setState(STATE.ERROR);
-
-    stopEverything();
-
-    document.getElementById("scanner").classList.add("hidden");
-    document.getElementById("result").classList.remove("hidden");
-
-    resultText.innerText = msg;
-
-}
-
-// -------------------------------
-// Stop everything cleanly
-// -------------------------------
-
-function stopEverything() {
-
-    resetRuntime();
-
-    if (stream) {
-
-        stream.getTracks().forEach(t => t.stop());
-        stream = null;
-
-    }
-
-}
-
-// -------------------------------
-// Reset app
-// -------------------------------
-
-function resetApp() {
-
-    stopEverything();
-
-    dealerMode = null;
-
-    currentState = STATE.IDLE;
-
-    document.getElementById("result").classList.add("hidden");
-    document.getElementById("scanner").classList.add("hidden");
-    document.getElementById("menu").classList.remove("hidden");
-
-}
-
-// -------------------------------
-// Optional: Debug mode (OFF by default)
-// -------------------------------
-
-const DEBUG = false;
-
-// If you ever want debugging:
-function debugLog(pred, conf, streak) {
-
-    if (!DEBUG) return;
-
-    console.log(
-        "Prediction:",
-        pred,
-        "Confidence:",
-        conf,
-        "Streak:",
-        streak
-    );
+    showSetup();
 
 }
