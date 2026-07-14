@@ -413,11 +413,9 @@ async function uploadImage(blob) {
 
         stopCamera();
 
-        showResult(
+        showResult(err.toString());
 
-            "Unable to contact AI server."
-
-        );
+        consile.error(err);
 
     }
 
