@@ -158,3 +158,102 @@ function changeServer() {
     showSetup();
 
 }
+
+// ===========================================================
+// Camera
+// ===========================================================
+
+async function startScan(mode) {
+
+    dealerMode = mode;
+
+    showScanner();
+
+    scannerTitle.innerText = "Preparing Camera...";
+
+    statusText.innerText = "Requesting camera permission...";
+
+    try {
+
+        stream = await navigator.mediaDevices.getUserMedia({
+
+            video: {
+
+                facingMode: "user"
+
+            }
+
+        });
+
+        video.srcObject = stream;
+
+        await video.play();
+
+        await beginCountdown();
+
+    }
+
+    catch (err) {
+
+        console.error(err);
+
+        showResult("Unable to access camera.");
+
+    }
+
+}
+
+// ===========================================================
+// Countdown
+// ===========================================================
+
+async function beginCountdown() {
+
+    scannerTitle.innerText = "Position Card";
+
+    for (
+
+        let i = COUNTDOWN_SECONDS;
+
+        i >= 1;
+
+        i--
+
+    ) {
+
+        statusText.innerText =
+
+            "Capturing image in\n\n" + i;
+
+        await sleep(1000);
+
+    }
+
+    scannerTitle.innerText = "Capturing...";
+
+    statusText.innerText =
+
+        "Taking photo...";
+
+    captureFrame();
+
+}
+
+// ===========================================================
+// Stop Camera
+// ===========================================================
+
+function stopCamera() {
+
+    if (!stream)
+        return;
+
+    stream
+
+        .getTracks()
+
+        .forEach(track => track.stop());
+
+    stream = null;
+
+}
