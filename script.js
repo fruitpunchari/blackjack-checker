@@ -257,3 +257,234 @@ function stopCamera() {
     stream = null;
 
 }
+
+// ===========================================================
+// Capture + Upload
+// ===========================================================
+
+async function captureFrame() {
+
+    try {
+
+        const canvas = document.createElement("canvas");
+
+        const scale = IMAGE_WIDTH / video.videoWidth;
+
+        canvas.width = IMAGE_WIDTH;
+
+        canvas.height = Math.round(
+
+            video.videoHeight * scale
+
+        );
+
+        const ctx = canvas.getContext("2d");
+
+        ctx.drawImage(
+
+            video,
+
+            0,
+
+            0,
+
+            canvas.width,
+
+            canvas.height
+
+        );
+
+        statusText.innerText =
+            "Compressing image...";
+
+        canvas.toBlob(
+
+            async function(blob) {
+
+                if (!blob) {
+
+                    showResult(
+                        "Unable to capture image."
+                    );
+
+                    stopCamera();
+
+                    return;
+
+                }
+
+                await uploadImage(blob);
+
+            },
+
+            "image/jpeg",
+
+            JPEG_QUALITY
+
+        );
+
+    }
+
+    catch (err) {
+
+        console.error(err);
+
+        stopCamera();
+
+        showResult(
+            "Camera error."
+        );
+
+    }
+
+}
+
+// ===========================================================
+// Upload to FastAPI
+// ===========================================================
+
+async function uploadImage(blob) {
+
+    statusText.innerText =
+        "Sending image to AI...";
+
+    const formData = new FormData();
+
+    formData.append(
+
+        "file",
+
+        blob,
+
+        "frame.jpg"
+
+    );
+
+    formData.append(
+
+        "dealer_mode",
+
+        dealerMode
+
+    );
+
+    try {
+
+        const response = await fetch(
+
+            serverURL + "/analyze",
+
+            {
+
+                method: "POST",
+
+                body: formData
+
+            }
+
+        );
+
+        if (!response.ok) {
+
+            throw new Error(
+
+                "Server returned " +
+
+                response.status
+
+            );
+
+        }
+
+        statusText.innerText =
+            "Gemini is analyzing...";
+
+        const data = await response.json();
+
+        stopCamera();
+
+        handleServerResponse(data);
+
+    }
+
+    catch (err) {
+
+        console.error(err);
+
+        stopCamera();
+
+        showResult(
+
+            "Unable to contact AI server."
+
+        );
+
+    }
+
+}
+
+// ===========================================================
+// Handle AI Response
+// ===========================================================
+
+function handleServerResponse(data) {
+
+    if (!data.result) {
+
+        showResult(
+
+            "Invalid server response."
+
+        );
+
+        return;
+
+    }
+
+    switch (
+
+        data.result
+
+    ) {
+
+        case "BLACKJACK":
+
+            showResult(
+
+                "BLACKJACK"
+
+            );
+
+            break;
+
+        case "NO_BLACKJACK":
+
+            showResult(
+
+                "NO BLACKJACK"
+
+            );
+
+            break;
+
+        case "NO_CARD":
+
+            showResult(
+
+                "Unable to identify card."
+
+            );
+
+            break;
+
+        default:
+
+            showResult(
+
+                "Unexpected AI response."
+
+            );
+
+    }
+
+}
