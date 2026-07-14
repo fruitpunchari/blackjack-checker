@@ -488,3 +488,37 @@ function handleServerResponse(data) {
     }
 
 }
+
+// ===========================================================
+// New Hand
+// ===========================================================
+
+function newHand() {
+
+    stopCamera();
+
+    dealerMode = "";
+
+    showMenu();
+
+}
+
+// ===========================================================
+// Utility
+// ===========================================================
+
+function sleep(ms) {
+
+    return new Promise(resolve =>
+
+        setTimeout(
+
+            resolve,
+
+            ms
+
+        )
+
+    );
+
+}
